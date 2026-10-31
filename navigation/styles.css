@@ -275,15 +275,91 @@ body.watch #map {
   opacity: 0;
 }
 
+body.watch .watch-rail {
+  position: fixed;
+  top: 6%;
+  left: 12%;
+  right: 12%;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+}
+
+body.watch .watch-rail a {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  color: #cbd5e1;
+  background: #1e2937;
+  border-radius: 999px;
+  padding: 5px 0;
+  font-size: 12px;
+}
+
+body.watch .watch-rail a.on {
+  background: #1d4ed8;
+  color: #fff;
+}
+
 body.watch .watch-face {
   position: fixed;
-  inset: 8%;
+  inset: 16% 8% 8%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 6px;
   text-align: center;
 }
+
+body.watch .alarm-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+body.watch .alarm-row button,
+body.watch #toggle,
+body.watch #dismiss {
+  border: 0;
+  border-radius: 999px;
+  background: #334155;
+  color: #fff;
+  padding: 6px 10px;
+}
+
+body.watch #set {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+body.watch #now,
+body.watch .alarm-note {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+body.watch #toggle { background: #0f766e; }
+body.watch #toggle.alarm-off { background: #7f1d1d; }
+
+body.watch .ring {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  background: #7f1d1d;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+}
+
+body.watch .ring[hidden] { display: none; }
+body.watch #dismiss { background: #fff; color: #7f1d1d; }
 
 body.watch #search {
   height: 36px;

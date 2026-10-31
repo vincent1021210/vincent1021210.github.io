@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PATS 鬧鐘 · 手錶</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="watch alarm-page">
+  <nav class="watch-rail">
+    <a href="watch.html">導航</a>
+    <a class="on" href="alarm.html">鬧鐘</a>
+  </nav>
+  <div class="watch-face">
+    <p id="now">現在 --:--:--</p>
+    <div class="alarm-row">
+      <button type="button" id="h-minus">−</button>
+      <p id="set">07:00</p>
+      <button type="button" id="h-plus">＋</button>
+    </div>
+    <div class="alarm-row">
+      <button type="button" id="m-minus">−5</button>
+      <button type="button" id="m-plus">＋5</button>
+    </div>
+    <button type="button" id="toggle">啟用</button>
+    <p class="alarm-note">請保持此頁開啟，鬧鐘才會準時響</p>
+  </div>
+  <div id="ring" class="ring" hidden>
+    <p>鬧鐘時間到</p>
+    <button type="button" id="dismiss">關閉鬧鐘</button>
+  </div>
+  <p id="toast" hidden></p>
+  <script src="alarm.js"></script>
+</body>
+</html>
