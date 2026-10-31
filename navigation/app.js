@@ -327,7 +327,13 @@
 
   function startHeadingSensor() {
     var status = $("heading-status");
-    var hasApi = !!(window.DeviceOrientationEvent || window.Gyroscope);
+    var hasApi = !!(window.DeviceOrientationEvent || window.Gyroscope || window.Accelerometer);
+    function markOk(label) {
+      if (status && !status.dataset.ok) {
+        status.dataset.ok = "1";
+        status.textContent = label;
+      }
+    }
     function onOrient(e) {
       var h = null;
       if (e.webkitCompassHeading != null && !isNaN(e.webkitCompassHeading)) {
@@ -339,27 +345,31 @@
       sensorHeading = h;
       lastHeading = h;
       applyHeading();
-      if (status && !status.dataset.ok) {
-        status.dataset.ok = "1";
-        status.textContent = "陀螺儀方向";
-      }
+      markOk("三軸加速度計方向");
     }
     function listen() {
       window.addEventListener("deviceorientationabsolute", onOrient, true);
       window.addEventListener("deviceorientation", onOrient, true);
     }
+    if (window.Accelerometer) {
+      try {
+        var acc = new Accelerometer({ frequency: 20 });
+        acc.addEventListener("reading", function () { markOk("三軸加速度計方向"); });
+        acc.start();
+      } catch (e) { /* 瀏覽器可能拒絕 */ }
+    }
     if (!hasApi) {
-      if (status) status.textContent = "此錶無陀螺儀，改用移動方向";
+      if (status) status.textContent = "此錶無方向感測器，改用移動方向";
       return;
     }
-    if (status) status.textContent = "讀取方向中…";
+    if (status) status.textContent = "讀取三軸加速度計…";
     if (typeof DeviceOrientationEvent !== "undefined" &&
         typeof DeviceOrientationEvent.requestPermission === "function") {
       DeviceOrientationEvent.requestPermission().then(function (state) {
         if (state === "granted") listen();
-        else if (status) status.textContent = "此錶無陀螺儀，改用移動方向";
+        else if (status) status.textContent = "此錶無方向感測器，改用移動方向";
       }).catch(function () {
-        if (status) status.textContent = "此錶無陀螺儀，改用移動方向";
+        if (status) status.textContent = "此錶無方向感測器，改用移動方向";
       });
     } else {
       listen();
