@@ -326,9 +326,18 @@ body.watch .watch-rail a.on {
 }
 
 body.watch.alarm-page {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-height: 100dvh;
+  padding: 16px 16px 24px;
+}
+
+body.watch.alarm-page .watch-rail {
+  position: relative;
+  width: min(380px, 100%);
+  margin: 0 0 12px;
+  z-index: 2;
 }
 
 body.watch .watch-face {
@@ -348,14 +357,15 @@ body.watch.alarm-page {
 body.watch.alarm-page .watch-face {
   position: relative;
   inset: auto;
-  width: min(320px, 92vmin);
-  height: min(320px, 92vmin);
-  aspect-ratio: 1;
+  width: min(380px, 100%);
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
   box-sizing: border-box;
-  padding: 36px 32px 28px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: #000;
+  padding: 8px 0 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
   justify-content: flex-start;
   gap: 8px;
 }
