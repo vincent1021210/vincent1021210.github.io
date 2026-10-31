@@ -6,12 +6,14 @@
   <title>PATS 導航 · 手錶</title>
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="watch">
   <div id="map" hidden></div>
   <div class="watch-face">
     <input id="search" type="text" placeholder="終點" autocomplete="off">
+    <ul id="suggest" hidden></ul>
     <div class="modes">
       <button type="button" id="mode-drive" class="mode on">開車</button>
       <button type="button" id="mode-walk" class="mode">走路</button>
@@ -21,7 +23,7 @@
     <button type="button" id="nav-btn">開始</button>
   </div>
   <p id="toast" hidden></p>
-  <script src="config.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#2563eb">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232563eb'/><path d='M16 6c4 0 8 3.2 8 8 0 6-8 12-8 12S8 20 8 14c0-4.8 4-8 8-8zm0 5.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z' fill='white'/></svg>">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="styles.css">
   <script>
     (function () {
@@ -25,6 +26,7 @@
 
   <section class="card search-card">
     <input id="search" type="text" placeholder="搜尋終點" autocomplete="off" inputmode="search">
+    <ul id="suggest" hidden></ul>
     <div class="modes" role="group" aria-label="交通方式">
       <button type="button" id="mode-drive" class="mode on">開車</button>
       <button type="button" id="mode-walk" class="mode">走路</button>
@@ -41,7 +43,7 @@
   </section>
 
   <p id="toast" hidden></p>
-  <script src="config.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

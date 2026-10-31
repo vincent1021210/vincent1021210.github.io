@@ -20,6 +20,11 @@ html, body {
 #map {
   position: fixed;
   inset: 0;
+  z-index: 0;
+}
+
+.leaflet-control-attribution {
+  font-size: 10px !important;
 }
 
 .card {
@@ -29,8 +34,30 @@ html, body {
   background: var(--card);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
-  z-index: 2;
+  z-index: 1000;
 }
+
+#suggest {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: 180px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+
+#suggest li button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: #fff;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+#suggest li + li button { border-top: 1px solid var(--line); }
 
 .search-card {
   top: max(12px, env(safe-area-inset-top));

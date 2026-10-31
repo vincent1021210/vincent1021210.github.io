@@ -1,16 +1,17 @@
 (function () {
-  var cfg = window.PATS_NAV || {};
-  var key = cfg.mapsKey || "";
   var map, dest, destName = "", lastPos, routePoints = [], steps = [];
   var navigating = false;
   var lastRerouteAt = 0;
   var lastSpoken = "";
-  var mode = "DRIVING";
-  var renderer;
+  var mode = "driving";
+  var line, destMarker, hereMarker;
   var watchId = null;
+  var searchTimer = 0;
+  var watchMode = document.body.classList.contains("watch");
 
   var $ = function (id) { return document.getElementById(id); };
   var searchEl = $("search");
+  var suggestEl = $("suggest");
   var instructionEl = $("instruction");
   var etaEl = $("eta");
   var navBtn = $("nav-btn");
@@ -44,73 +45,142 @@
   function distToPolyline(here, points) {
     if (!points.length) return Infinity;
     var min = Infinity;
-    for (var i = 0; i < points.length; i++) {
-      min = Math.min(min, haversine(here, points[i]));
-    }
+    for (var i = 0; i < points.length; i++) min = Math.min(min, haversine(here, points[i]));
     return min;
   }
 
-  function loadMaps() {
-    if (!key) {
-      toast("尚未設定地圖金鑰");
-      return;
-    }
-    var s = document.createElement("script");
-    s.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(key) +
-      "&libraries=places&language=zh-TW&callback=patsNavInit";
-    s.async = true;
-    s.defer = true;
-    s.onerror = function () { toast("地圖腳本載入失敗，請檢查 Maps JavaScript API"); };
-    document.head.appendChild(s);
+  function zhStep(step) {
+    var m = step.maneuver || {};
+    var type = m.type || "";
+    var mod = m.modifier || "";
+    var name = step.name || "";
+    var table = {
+      "turn|right": "右轉",
+      "turn|left": "左轉",
+      "turn|sharp right": "靠右急轉",
+      "turn|sharp left": "靠左急轉",
+      "turn|slight right": "靠右",
+      "turn|slight left": "靠左",
+      "turn|straight": "直行",
+      "new name|": "繼續前行",
+      "depart|": "出發",
+      "arrive|": "抵達終點",
+      "merge|": "匯入車道",
+      "on ramp|": "上交流道",
+      "off ramp|": "下交流道",
+      "fork|right": "靠右岔路",
+      "fork|left": "靠左岔路",
+      "roundabout|": "進入圓環",
+      "rotary|": "進入圓環",
+      "end of road|": "路口盡頭",
+      "continue|": "繼續前行"
+    };
+    var text = table[type + "|" + mod] || table[type + "|"] || "繼續前行";
+    return name ? text + "，沿 " + name : text;
   }
 
-  window.patsNavInit = function () {
-    var taipei = { lat: 25.033, lng: 121.5654 };
-    var watchMode = document.body.classList.contains("watch");
-    map = new google.maps.Map($("map"), {
-      center: taipei,
-      zoom: 15,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-      disableDefaultUI: watchMode
-    });
-    renderer = new google.maps.DirectionsRenderer({
-      map: watchMode ? null : map,
-      suppressMarkers: watchMode,
-      polylineOptions: { strokeColor: "#2563eb", strokeWeight: 6 }
-    });
+  function fmtDur(sec) {
+    var m = Math.round(sec / 60);
+    if (m < 60) return "約 " + m + " 分鐘";
+    return "約 " + Math.floor(m / 60) + " 小時 " + (m % 60) + " 分";
+  }
 
-    var ac = new google.maps.places.Autocomplete(searchEl, {
-      fields: ["geometry", "name", "formatted_address"],
-      componentRestrictions: { country: "tw" }
-    });
-    ac.addListener("place_changed", function () {
-      var place = ac.getPlace();
-      if (!place.geometry || !place.geometry.location) {
-        toast("請從清單選一個終點");
+  function fmtDist(m) {
+    return m >= 1000 ? (m / 1000).toFixed(1) + " 公里" : Math.round(m) + " 公尺";
+  }
+
+  function initMap() {
+    if (watchMode || !window.L) {
+      locateMe();
+      bindUi();
+      return;
+    }
+    map = L.map("map", { zoomControl: false }).setView([25.033, 121.5654], 14);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+    locateMe();
+    bindUi();
+  }
+
+  function bindUi() {
+    $("mode-drive").onclick = function () { setMode("driving"); };
+    $("mode-walk").onclick = function () { setMode("foot"); };
+    navBtn.onclick = toggleNav;
+    searchEl.addEventListener("input", function () {
+      clearTimeout(searchTimer);
+      var q = searchEl.value.trim();
+      if (q.length < 2) {
+        hideSuggest();
         return;
       }
-      dest = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
-      destName = place.name || place.formatted_address || "終點";
-      searchEl.value = destName;
-      if (map && !document.body.classList.contains("watch")) {
-        map.panTo(dest);
-        map.setZoom(15);
-      }
-      planRoute(true);
+      searchTimer = setTimeout(function () { searchPlaces(q); }, 350);
     });
+    searchEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        var first = suggestEl.querySelector("button");
+        if (first) first.click();
+        else searchPlaces(searchEl.value.trim(), true);
+      }
+    });
+  }
 
-    $("mode-drive").onclick = function () { setMode("DRIVING"); };
-    $("mode-walk").onclick = function () { setMode("WALKING"); };
-    navBtn.onclick = toggleNav;
-    locateMe();
-  };
+  function hideSuggest() {
+    if (!suggestEl) return;
+    suggestEl.hidden = true;
+    suggestEl.innerHTML = "";
+  }
+
+  function searchPlaces(q, pickFirst) {
+    if (!q) return;
+    fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=tw&accept-language=zh-TW&q=" + encodeURIComponent(q), {
+      headers: { Accept: "application/json" }
+    }).then(function (r) { return r.json(); }).then(function (rows) {
+      if (!rows || !rows.length) {
+        hideSuggest();
+        toast("找不到這個地點");
+        return;
+      }
+      if (pickFirst || watchMode) {
+        pickPlace(rows[0]);
+        return;
+      }
+      suggestEl.innerHTML = "";
+      rows.forEach(function (row) {
+        var li = document.createElement("li");
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = row.display_name;
+        btn.onclick = function () { pickPlace(row); };
+        li.appendChild(btn);
+        suggestEl.appendChild(li);
+      });
+      suggestEl.hidden = false;
+    }).catch(function () {
+      toast("搜尋失敗，請再試一次");
+    });
+  }
+
+  function pickPlace(row) {
+    dest = { lat: parseFloat(row.lat), lng: parseFloat(row.lon) };
+    destName = row.name || (row.display_name || "").split(",")[0] || "終點";
+    searchEl.value = destName;
+    hideSuggest();
+    if (map) {
+      if (destMarker) destMarker.remove();
+      destMarker = L.marker([dest.lat, dest.lng]).addTo(map).bindPopup(destName);
+      map.setView([dest.lat, dest.lng], 16);
+    }
+    planRoute(true);
+  }
 
   function setMode(next) {
     mode = next;
-    $("mode-drive").classList.toggle("on", next === "DRIVING");
-    $("mode-walk").classList.toggle("on", next === "WALKING");
+    $("mode-drive").classList.toggle("on", next === "driving");
+    $("mode-walk").classList.toggle("on", next === "foot");
     if (dest) planRoute(true);
   }
 
@@ -121,24 +191,7 @@
     }
     navigator.geolocation.getCurrentPosition(function (pos) {
       lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      if (map && !document.body.classList.contains("watch")) {
-        map.panTo(lastPos);
-        map.setZoom(16);
-      }
-      if (document.body.classList.contains("watch")) return;
-      new google.maps.Marker({
-        map: map,
-        position: lastPos,
-        title: "目前位置",
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 7,
-          fillColor: "#2563eb",
-          fillOpacity: 1,
-          strokeColor: "#fff",
-          strokeWeight: 2
-        }
-      });
+      showHere();
     }, function () {
       toast("請允許定位，才能規劃路線。");
     }, { enableHighAccuracy: true, timeout: 12000 });
@@ -146,11 +199,26 @@
     if (watchId != null) navigator.geolocation.clearWatch(watchId);
     watchId = navigator.geolocation.watchPosition(function (pos) {
       lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      if (navigating) {
-        if (map && !document.body.classList.contains("watch")) map.panTo(lastPos);
-        updateGuidance(lastPos);
-      }
+      showHere();
+      if (navigating) updateGuidance(lastPos);
     }, function () {}, { enableHighAccuracy: true, maximumAge: 800 });
+  }
+
+  function showHere() {
+    if (!map || !lastPos) return;
+    if (hereMarker) {
+      hereMarker.setLatLng([lastPos.lat, lastPos.lng]);
+    } else {
+      hereMarker = L.circleMarker([lastPos.lat, lastPos.lng], {
+        radius: 8,
+        color: "#fff",
+        weight: 2,
+        fillColor: "#2563eb",
+        fillOpacity: 1
+      }).addTo(map);
+      map.setView([lastPos.lat, lastPos.lng], 16);
+    }
+    if (navigating) map.panTo([lastPos.lat, lastPos.lng]);
   }
 
   function planRoute(fit, fromReroute) {
@@ -163,48 +231,54 @@
       return;
     }
     navBtn.disabled = true;
-    var svc = new google.maps.DirectionsService();
-    svc.route({
-      origin: lastPos,
-      destination: dest,
-      travelMode: google.maps.TravelMode[mode],
-      language: "zh-TW"
-    }, function (res, status) {
+    var url = "https://router.project-osrm.org/route/v1/" + mode + "/" +
+      lastPos.lng + "," + lastPos.lat + ";" + dest.lng + "," + dest.lat +
+      "?overview=full&geometries=geojson&steps=true";
+    fetch(url).then(function (r) { return r.json(); }).then(function (data) {
       navBtn.disabled = false;
-      if (status !== "OK" || !res.routes[0]) {
-        toast("找不到路線，請換一個終點再試。" + (status ? " (" + status + ")" : ""));
+      if (!data.routes || !data.routes[0]) {
+        toast("找不到路線，請換一個終點再試。");
         return;
       }
-      renderer.setDirections(res);
-      var leg = res.routes[0].legs[0];
-      routePoints = [];
-      res.routes[0].overview_path.forEach(function (p) {
-        routePoints.push({ lat: p.lat(), lng: p.lng() });
+      var route = data.routes[0];
+      routePoints = route.geometry.coordinates.map(function (c) {
+        return { lat: c[1], lng: c[0] };
       });
-      steps = leg.steps.map(function (s) {
-        return {
-          instruction: s.instructions.replace(/<[^>]+>/g, ""),
-          end: { lat: s.end_location.lat(), lng: s.end_location.lng() }
-        };
+      steps = [];
+      (route.legs || []).forEach(function (leg) {
+        (leg.steps || []).forEach(function (s) {
+          var loc = s.maneuver && s.maneuver.location ? s.maneuver.location : null;
+          steps.push({
+            instruction: zhStep(s),
+            end: loc ? { lat: loc[1], lng: loc[0] } : dest
+          });
+        });
       });
-      etaEl.textContent = (leg.duration && leg.duration.text ? leg.duration.text : "") +
-        (leg.distance ? " · " + leg.distance.text : "");
+      etaEl.textContent = fmtDur(route.duration) + " · " + fmtDist(route.distance);
       instructionEl.textContent = (steps[0] && steps[0].instruction) || destName;
+      drawLine(fit);
       if (fromReroute) speak("已重新規劃路線");
-      if (fit && map && !document.body.classList.contains("watch")) {
-        var bounds = new google.maps.LatLngBounds();
-        routePoints.forEach(function (p) { bounds.extend(p); });
-        bounds.extend(lastPos);
-        map.fitBounds(bounds, 80);
-      }
+    }).catch(function () {
+      navBtn.disabled = false;
+      toast("規劃路線失敗，請檢查網路後再試。");
     });
+  }
+
+  function drawLine(fit) {
+    if (!map || !routePoints.length) return;
+    if (line) line.remove();
+    line = L.polyline(routePoints.map(function (p) { return [p.lat, p.lng]; }), {
+      color: "#2563eb",
+      weight: 6
+    }).addTo(map);
+    if (fit) map.fitBounds(line.getBounds(), { padding: [80, 80] });
   }
 
   function toggleNav() {
     if (navigating) {
       navigating = false;
-      navBtn.textContent = document.body.classList.contains("watch") ? "開始" : "開始導航";
-      instructionEl.textContent = destName || "搜尋終點後即可規劃路線";
+      navBtn.textContent = watchMode ? "開始" : "開始導航";
+      instructionEl.textContent = destName || (watchMode ? "說出或輸入終點" : "搜尋終點後即可規劃路線");
       return;
     }
     if (!lastPos) {
@@ -217,7 +291,7 @@
     }
     if (!steps.length) planRoute(true);
     navigating = true;
-    navBtn.textContent = document.body.classList.contains("watch") ? "結束" : "結束導航";
+    navBtn.textContent = watchMode ? "結束" : "結束導航";
     updateGuidance(lastPos);
   }
 
@@ -246,5 +320,5 @@
     }
   }
 
-  loadMaps();
+  initMap();
 })();
