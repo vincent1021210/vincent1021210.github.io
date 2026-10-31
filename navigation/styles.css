@@ -419,8 +419,10 @@ body.watch.alarm-page button {
 }
 body.watch.alarm-page #add,
 body.watch.alarm-page #edit-time-btn,
+body.watch.alarm-page #edit-delete,
 body.watch.alarm-page #pick-done,
 body.watch.alarm-page .ghost { width: 100%; }
+body.watch.alarm-page .danger { background: #7f1d1d; }
 
 body.watch.alarm-page .days {
   display: flex;

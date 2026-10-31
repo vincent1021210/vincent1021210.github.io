@@ -253,6 +253,13 @@
     show("edit");
   };
   document.getElementById("edit-back").onclick = function () { renderList(); };
+  document.getElementById("edit-delete").onclick = function () {
+    if (!editing) return;
+    items = items.filter(function (a) { return a.id !== editing.id; });
+    editing = null;
+    save();
+    renderList();
+  };
   document.getElementById("edit-on").onchange = function () {
     if (!editing) return;
     editing.on = this.checked;
