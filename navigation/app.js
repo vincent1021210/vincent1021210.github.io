@@ -3,6 +3,8 @@
   var navigating = false;
   var lastRerouteAt = 0;
   var lastSpoken = "";
+  var stepIndex = 0;
+  var lastRemainShown = -1;
   var mode = "driving";
   var line, destMarker, hereMarker;
   var watchId = null;
@@ -171,11 +173,11 @@
     searchEl.addEventListener("input", function () {
       clearTimeout(searchTimer);
       var q = searchEl.value.trim();
-      if (q.length < 2) {
+      if (q.length < 3) {
         hideSuggest();
         return;
       }
-      searchTimer = setTimeout(function () { searchPlaces(q); }, 350);
+      searchTimer = setTimeout(function () { searchPlaces(q); }, 550);
     });
     searchEl.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
@@ -317,6 +319,7 @@
         return;
       }
       var route = data.routes[0];
+      if (!fromReroute) stepIndex = 0;
       lastDuration = route.duration || 0;
       lastDistance = route.distance || 0;
       routePoints = route.geometry.coordinates.map(function (c) {
@@ -389,21 +392,23 @@
       planRoute(false, true);
       return;
     }
-    var next = steps[0];
-    var best = Infinity;
-    steps.forEach(function (s) {
-      var d = haversine(here, s.end);
-      if (d < best) { best = d; next = s; }
-    });
-    var remain = haversine(here, next.end);
-    var text = remain < 30 ? next.instruction : "約 " + Math.round(remain) + " 公尺後 " + next.instruction;
-    if (instructionEl) instructionEl.textContent = text;
-    if (turnDistEl) turnDistEl.textContent = "約 " + Math.round(remain) + " 公尺後";
-    if (turnInstEl) turnInstEl.textContent = next.instruction;
-    if (destTitleEl) destTitleEl.textContent = destName;
-    if (etaEl) etaEl.textContent = fmtDur(lastDuration) + " · " + fmtDist(lastDistance);
-    if (etaClockEl) etaClockEl.textContent = arrivalClock(lastDuration);
-    if (remain < 30 && next.instruction !== lastSpoken) {
+    while (stepIndex < steps.length - 1 && haversine(here, steps[stepIndex].end) < 28) {
+      stepIndex += 1;
+    }
+    var next = steps[stepIndex];
+    var remain = Math.round(haversine(here, next.end));
+    var rounded = Math.floor(remain / 10) * 10;
+    if (turnInstEl && turnInstEl.textContent !== next.instruction) {
+      turnInstEl.textContent = next.instruction;
+    }
+    if (instructionEl && !turnInstEl) {
+      instructionEl.textContent = remain < 30 ? next.instruction : "約 " + remain + " 公尺後 " + next.instruction;
+    }
+    if (rounded !== lastRemainShown) {
+      lastRemainShown = rounded;
+      if (turnDistEl) turnDistEl.textContent = remain < 30 ? "即將" : "約 " + Math.max(10, rounded) + " 公尺後";
+    }
+    if (next.instruction !== lastSpoken && remain < 35) {
       lastSpoken = next.instruction;
       speak(next.instruction);
     }
