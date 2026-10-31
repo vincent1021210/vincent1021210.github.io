@@ -340,6 +340,30 @@ body.watch.alarm-page .watch-rail {
   z-index: 2;
 }
 
+body.watch .heading-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 2px 0;
+}
+
+body.watch .heading-arrow {
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  text-align: center;
+  color: #fff;
+  background: #1a73e8;
+  border-radius: 50%;
+  font-size: 18px;
+  transform-origin: 50% 50%;
+}
+
+body.watch .heading-status {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
 body.watch .watch-face {
   position: fixed;
   inset: 12% 11% 8%;

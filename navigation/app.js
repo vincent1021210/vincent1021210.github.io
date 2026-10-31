@@ -25,6 +25,7 @@
   var lastDuration = 0;
   var lastDistance = 0;
   var lastHeading = 0;
+  var sensorHeading = null;
 
   function toast(msg) {
     var el = $("toast");
@@ -101,6 +102,7 @@
 
   function initMap() {
     if (watchMode || !window.L) {
+      startHeadingSensor();
       locateMe();
       bindUi();
       return;
@@ -111,6 +113,7 @@
       attribution: "&copy; OpenStreetMap"
     }).addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
+    startHeadingSensor();
     locateMe();
     bindUi();
   }
@@ -301,6 +304,7 @@
   }
 
   function readHeading(pos, prev) {
+    if (sensorHeading != null) return sensorHeading;
     var h = pos.coords.heading;
     var speed = pos.coords.speed;
     if (h != null && !isNaN(h) && speed != null && speed >= 0.6) return h;
@@ -312,11 +316,54 @@
   }
 
   function applyHeading() {
+    var arrow = $("heading-arrow");
+    if (arrow) arrow.style.transform = "rotate(" + lastHeading + "deg)";
     if (!hereMarker) return;
     var el = hereMarker.getElement();
     if (!el) return;
     var node = el.querySelector(".loc-you");
     if (node) node.style.transform = "rotate(" + lastHeading + "deg)";
+  }
+
+  function startHeadingSensor() {
+    var status = $("heading-status");
+    var hasApi = !!(window.DeviceOrientationEvent || window.Gyroscope);
+    function onOrient(e) {
+      var h = null;
+      if (e.webkitCompassHeading != null && !isNaN(e.webkitCompassHeading)) {
+        h = e.webkitCompassHeading;
+      } else if (e.alpha != null && !isNaN(e.alpha)) {
+        h = (360 - e.alpha) % 360;
+      }
+      if (h == null) return;
+      sensorHeading = h;
+      lastHeading = h;
+      applyHeading();
+      if (status && !status.dataset.ok) {
+        status.dataset.ok = "1";
+        status.textContent = "陀螺儀方向";
+      }
+    }
+    function listen() {
+      window.addEventListener("deviceorientationabsolute", onOrient, true);
+      window.addEventListener("deviceorientation", onOrient, true);
+    }
+    if (!hasApi) {
+      if (status) status.textContent = "此錶無陀螺儀，改用移動方向";
+      return;
+    }
+    if (status) status.textContent = "讀取方向中…";
+    if (typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function") {
+      DeviceOrientationEvent.requestPermission().then(function (state) {
+        if (state === "granted") listen();
+        else if (status) status.textContent = "此錶無陀螺儀，改用移動方向";
+      }).catch(function () {
+        if (status) status.textContent = "此錶無陀螺儀，改用移動方向";
+      });
+    } else {
+      listen();
+    }
   }
 
   function showHere() {
