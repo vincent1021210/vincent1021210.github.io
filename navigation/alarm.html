@@ -4,32 +4,43 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>PATS 鬧鐘 · 手錶</title>
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body class="watch alarm-page">
   <div class="watch-face">
-    <p id="now">現在 --:--:--</p>
-    <p class="alarm-title">鬧鐘</p>
-    <p id="set">07:00</p>
-    <div class="alarm-wheels">
-      <div class="wheel">
-        <button type="button" id="h-plus">＋</button>
-        <p id="hour">07</p>
-        <p class="wheel-label">時</p>
-        <button type="button" id="h-minus">−</button>
+    <section id="panel-list">
+      <div id="cards"></div>
+      <button type="button" id="add">新增鬧鐘</button>
+    </section>
+    <section id="panel-edit" hidden>
+      <div class="card edit-card">
+        <div>
+          <p id="edit-label">未指定</p>
+          <p id="edit-time">上午 7:00</p>
+        </div>
+        <label class="switch"><input type="checkbox" id="edit-on"><span></span></label>
       </div>
-      <div class="wheel">
-        <button type="button" id="m-plus">＋</button>
-        <p id="minute">00</p>
-        <p class="wheel-label">分</p>
-        <button type="button" id="m-minus">−</button>
+      <button type="button" id="edit-time-btn">編輯時間</button>
+      <div id="days" class="days"></div>
+      <p id="edit-status">鬧鐘已關閉</p>
+      <button type="button" id="edit-back" class="ghost">返回列表</button>
+    </section>
+    <section id="panel-pick" hidden>
+      <p class="pick-title">選取時間</p>
+      <div class="pick-row">
+        <button type="button" id="pick-hour" class="digit on">07</button>
+        <span>:</span>
+        <button type="button" id="pick-min" class="digit">00</button>
+        <div class="ampm">
+          <button type="button" id="pick-am">AM</button>
+          <button type="button" id="pick-pm" class="on">PM</button>
+        </div>
       </div>
-    </div>
-    <p id="remain">未設定</p>
-    <button type="button" id="toggle">啟用</button>
-    <p class="alarm-note">離開此頁後網頁鬧鐘可能不響</p>
+      <div id="dial" class="dial"></div>
+      <button type="button" id="pick-done">完成</button>
+    </section>
   </div>
   <div id="ring" class="ring" hidden>
     <p>鬧鐘時間到</p>
