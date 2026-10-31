@@ -11,21 +11,32 @@
 <body class="watch alarm-page">
   <div class="watch-face">
     <p id="now">現在 --:--:--</p>
-    <div class="alarm-row">
-      <button type="button" id="h-minus">−</button>
-      <p id="set">07:00</p>
-      <button type="button" id="h-plus">＋</button>
+    <p class="alarm-title">鬧鐘</p>
+    <p id="set">07:00</p>
+    <div class="alarm-wheels">
+      <div class="wheel">
+        <button type="button" id="h-plus">＋</button>
+        <p id="hour">07</p>
+        <p class="wheel-label">時</p>
+        <button type="button" id="h-minus">−</button>
+      </div>
+      <div class="wheel">
+        <button type="button" id="m-plus">＋</button>
+        <p id="minute">00</p>
+        <p class="wheel-label">分</p>
+        <button type="button" id="m-minus">−</button>
+      </div>
     </div>
-    <div class="alarm-row">
-      <button type="button" id="m-minus">−5</button>
-      <button type="button" id="m-plus">＋5</button>
-    </div>
+    <p id="remain">未設定</p>
     <button type="button" id="toggle">啟用</button>
-    <p class="alarm-note">請保持此頁開啟，鬧鐘才會準時響</p>
+    <p class="alarm-note">離開此頁後網頁鬧鐘可能不響</p>
   </div>
   <div id="ring" class="ring" hidden>
     <p>鬧鐘時間到</p>
-    <button type="button" id="dismiss">關閉鬧鐘</button>
+    <div class="ring-actions">
+      <button type="button" id="snooze">貪睡 5 分</button>
+      <button type="button" id="dismiss">關閉</button>
+    </div>
   </div>
   <p id="toast" hidden></p>
   <script src="alarm.js"></script>
