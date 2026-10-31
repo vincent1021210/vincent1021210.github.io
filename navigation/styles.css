@@ -207,6 +207,8 @@ body.navigating #nav-btn { background: var(--exit); }
   margin-left: -28px;
   margin-top: -28px;
   position: relative;
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
 
 .loc-you .halo {

@@ -24,6 +24,7 @@
   var turnInstEl = $("turn-instruction");
   var lastDuration = 0;
   var lastDistance = 0;
+  var lastHeading = 0;
 
   function toast(msg) {
     var el = $("toast");
@@ -256,6 +257,7 @@
       return;
     }
     navigator.geolocation.getCurrentPosition(function (pos) {
+      lastHeading = readHeading(pos, lastPos);
       lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       showHere();
     }, function () {
@@ -264,6 +266,7 @@
 
     if (watchId != null) navigator.geolocation.clearWatch(watchId);
     watchId = navigator.geolocation.watchPosition(function (pos) {
+      lastHeading = readHeading(pos, lastPos);
       lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       showHere();
       if (navigating) updateGuidance(lastPos);
@@ -288,6 +291,34 @@
     });
   }
 
+  function bearingDeg(from, to) {
+    var lat1 = from.lat * Math.PI / 180;
+    var lat2 = to.lat * Math.PI / 180;
+    var dLng = (to.lng - from.lng) * Math.PI / 180;
+    var y = Math.sin(dLng) * Math.cos(lat2);
+    var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  }
+
+  function readHeading(pos, prev) {
+    var h = pos.coords.heading;
+    var speed = pos.coords.speed;
+    if (h != null && !isNaN(h) && speed != null && speed >= 0.6) return h;
+    if (prev) {
+      var next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      if (haversine(prev, next) >= 3) return bearingDeg(prev, next);
+    }
+    return lastHeading;
+  }
+
+  function applyHeading() {
+    if (!hereMarker) return;
+    var el = hereMarker.getElement();
+    if (!el) return;
+    var node = el.querySelector(".loc-you");
+    if (node) node.style.transform = "rotate(" + lastHeading + "deg)";
+  }
+
   function showHere() {
     if (!map || !lastPos) return;
     if (hereMarker) {
@@ -296,6 +327,7 @@
       hereMarker = L.marker([lastPos.lat, lastPos.lng], { icon: youIcon(), zIndexOffset: 600 }).addTo(map);
       map.setView([lastPos.lat, lastPos.lng], 16);
     }
+    applyHeading();
     if (navigating) map.panTo([lastPos.lat, lastPos.lng]);
   }
 
