@@ -109,6 +109,77 @@ html, body {
   font-size: 13px;
 }
 
+body.watch {
+  background: #0f172a;
+}
+
+body.watch #map {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.watch .watch-face {
+  position: fixed;
+  inset: 8%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+body.watch #search {
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: #1e2937;
+  color: #fff;
+  text-align: center;
+  font-size: 14px;
+}
+
+body.watch .modes {
+  border-color: #334155;
+}
+
+body.watch .mode {
+  background: #1e2937;
+  color: #e2e8f0;
+  padding: 7px 4px;
+  font-size: 13px;
+}
+
+body.watch .mode.on {
+  background: #1e3a8a;
+  color: #fff;
+}
+
+body.watch #instruction {
+  color: #f8fafc;
+  font-size: 15px;
+  margin: 4px 0 0;
+}
+
+body.watch #eta {
+  color: #94a3b8;
+  font-size: 12px;
+  margin: 0;
+}
+
+body.watch #nav-btn {
+  margin-top: 4px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+body.watch #toast {
+  bottom: 18%;
+}
+
 #toast {
   position: fixed;
   left: 50%;

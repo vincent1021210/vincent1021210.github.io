@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PATS 導航 · 手錶</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="watch">
+  <div id="map" hidden></div>
+  <div class="watch-face">
+    <input id="search" type="text" placeholder="終點" autocomplete="off">
+    <div class="modes">
+      <button type="button" id="mode-drive" class="mode on">開車</button>
+      <button type="button" id="mode-walk" class="mode">走路</button>
+    </div>
+    <p id="instruction">說出或輸入終點</p>
+    <p id="eta"></p>
+    <button type="button" id="nav-btn">開始</button>
+  </div>
+  <p id="toast" hidden></p>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

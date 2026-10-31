@@ -66,16 +66,18 @@
 
   window.patsNavInit = function () {
     var taipei = { lat: 25.033, lng: 121.5654 };
+    var watchMode = document.body.classList.contains("watch");
     map = new google.maps.Map($("map"), {
       center: taipei,
       zoom: 15,
       mapTypeControl: false,
       streetViewControl: false,
-      fullscreenControl: false
+      fullscreenControl: false,
+      disableDefaultUI: watchMode
     });
     renderer = new google.maps.DirectionsRenderer({
-      map: map,
-      suppressMarkers: false,
+      map: watchMode ? null : map,
+      suppressMarkers: watchMode,
       polylineOptions: { strokeColor: "#2563eb", strokeWeight: 6 }
     });
 
@@ -92,8 +94,10 @@
       dest = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
       destName = place.name || place.formatted_address || "終點";
       searchEl.value = destName;
-      map.panTo(dest);
-      map.setZoom(15);
+      if (map && !document.body.classList.contains("watch")) {
+        map.panTo(dest);
+        map.setZoom(15);
+      }
       planRoute(true);
     });
 
@@ -117,8 +121,11 @@
     }
     navigator.geolocation.getCurrentPosition(function (pos) {
       lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      map.panTo(lastPos);
-      map.setZoom(16);
+      if (map && !document.body.classList.contains("watch")) {
+        map.panTo(lastPos);
+        map.setZoom(16);
+      }
+      if (document.body.classList.contains("watch")) return;
       new google.maps.Marker({
         map: map,
         position: lastPos,
@@ -140,7 +147,7 @@
     watchId = navigator.geolocation.watchPosition(function (pos) {
       lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       if (navigating) {
-        map.panTo(lastPos);
+        if (map && !document.body.classList.contains("watch")) map.panTo(lastPos);
         updateGuidance(lastPos);
       }
     }, function () {}, { enableHighAccuracy: true, maximumAge: 800 });
@@ -184,7 +191,7 @@
         (leg.distance ? " · " + leg.distance.text : "");
       instructionEl.textContent = (steps[0] && steps[0].instruction) || destName;
       if (fromReroute) speak("已重新規劃路線");
-      if (fit) {
+      if (fit && map && !document.body.classList.contains("watch")) {
         var bounds = new google.maps.LatLngBounds();
         routePoints.forEach(function (p) { bounds.extend(p); });
         bounds.extend(lastPos);
@@ -196,7 +203,7 @@
   function toggleNav() {
     if (navigating) {
       navigating = false;
-      navBtn.textContent = "開始導航";
+      navBtn.textContent = document.body.classList.contains("watch") ? "開始" : "開始導航";
       instructionEl.textContent = destName || "搜尋終點後即可規劃路線";
       return;
     }
@@ -210,7 +217,7 @@
     }
     if (!steps.length) planRoute(true);
     navigating = true;
-    navBtn.textContent = "結束導航";
+    navBtn.textContent = document.body.classList.contains("watch") ? "結束" : "結束導航";
     updateGuidance(lastPos);
   }
 
