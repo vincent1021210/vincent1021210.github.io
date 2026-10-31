@@ -15,6 +15,13 @@
   var instructionEl = $("instruction");
   var etaEl = $("eta");
   var navBtn = $("nav-btn");
+  var destTitleEl = $("dest-title");
+  var etaClockEl = $("eta-clock");
+  var turnCard = $("turn-card");
+  var turnDistEl = $("turn-distance");
+  var turnInstEl = $("turn-instruction");
+  var lastDuration = 0;
+  var lastDistance = 0;
 
   function toast(msg) {
     var el = $("toast");
@@ -105,10 +112,51 @@
     bindUi();
   }
 
+  function applyUiState() {
+    if (watchMode) return;
+    document.body.classList.toggle("navigating", navigating);
+    document.body.classList.toggle("preview", !navigating && !!dest);
+    document.body.classList.toggle("explore", !navigating && !dest);
+    if (turnCard) turnCard.hidden = !navigating;
+    if (etaClockEl) etaClockEl.hidden = !navigating;
+    if (navBtn) {
+      navBtn.textContent = navigating ? "結束" : "開始";
+    }
+    if (!dest && destTitleEl) destTitleEl.textContent = "搜尋終點後即可規劃路線";
+  }
+
+  function arrivalClock(sec) {
+    var d = new Date(Date.now() + sec * 1000);
+    var h = d.getHours();
+    var m = d.getMinutes();
+    var ap = h >= 12 ? "下午" : "上午";
+    var hh = h % 12 || 12;
+    return ap + " " + hh + ":" + (m < 10 ? "0" : "") + m;
+  }
+
   function bindUi() {
     $("mode-drive").onclick = function () { setMode("driving"); };
     $("mode-walk").onclick = function () { setMode("foot"); };
     navBtn.onclick = toggleNav;
+    var voice = $("voice");
+    if (voice) {
+      voice.onclick = function () {
+        var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Rec) {
+          searchEl.focus();
+          return;
+        }
+        var rec = new Rec();
+        rec.lang = "zh-TW";
+        rec.onresult = function (e) {
+          var q = e.results[0][0].transcript;
+          searchEl.value = q;
+          searchPlaces(q, true);
+        };
+        rec.start();
+      };
+    }
+    applyUiState();
     searchEl.addEventListener("input", function () {
       clearTimeout(searchTimer);
       var q = searchEl.value.trim();
@@ -153,7 +201,10 @@
         var li = document.createElement("li");
         var btn = document.createElement("button");
         btn.type = "button";
-        btn.textContent = row.display_name;
+        var name = row.name || (row.display_name || "").split(",")[0];
+        btn.innerHTML = "<span class=\"name\"></span><span class=\"addr\"></span>";
+        btn.querySelector(".name").textContent = name;
+        btn.querySelector(".addr").textContent = row.display_name || "";
         btn.onclick = function () { pickPlace(row); };
         li.appendChild(btn);
         suggestEl.appendChild(li);
@@ -181,6 +232,8 @@
     mode = next;
     $("mode-drive").classList.toggle("on", next === "driving");
     $("mode-walk").classList.toggle("on", next === "foot");
+    $("mode-drive").classList.toggle("chip", !watchMode);
+    $("mode-walk").classList.toggle("chip", !watchMode);
     if (dest) planRoute(true);
   }
 
@@ -213,7 +266,7 @@
         radius: 8,
         color: "#fff",
         weight: 2,
-        fillColor: "#2563eb",
+        fillColor: "#1a73e8",
         fillOpacity: 1
       }).addTo(map);
       map.setView([lastPos.lat, lastPos.lng], 16);
@@ -241,6 +294,8 @@
         return;
       }
       var route = data.routes[0];
+      lastDuration = route.duration || 0;
+      lastDistance = route.distance || 0;
       routePoints = route.geometry.coordinates.map(function (c) {
         return { lat: c[1], lng: c[0] };
       });
@@ -255,8 +310,11 @@
         });
       });
       etaEl.textContent = fmtDur(route.duration) + " · " + fmtDist(route.distance);
-      instructionEl.textContent = (steps[0] && steps[0].instruction) || destName;
+      if (instructionEl) instructionEl.textContent = (steps[0] && steps[0].instruction) || destName;
+      if (destTitleEl) destTitleEl.textContent = destName || "終點";
+      if (etaClockEl) etaClockEl.textContent = arrivalClock(route.duration);
       drawLine(fit);
+      applyUiState();
       if (fromReroute) speak("已重新規劃路線");
     }).catch(function () {
       navBtn.disabled = false;
@@ -268,7 +326,7 @@
     if (!map || !routePoints.length) return;
     if (line) line.remove();
     line = L.polyline(routePoints.map(function (p) { return [p.lat, p.lng]; }), {
-      color: "#2563eb",
+      color: "#1a73e8",
       weight: 6
     }).addTo(map);
     if (fit) map.fitBounds(line.getBounds(), { padding: [80, 80] });
@@ -277,8 +335,11 @@
   function toggleNav() {
     if (navigating) {
       navigating = false;
-      navBtn.textContent = watchMode ? "開始" : "開始導航";
-      instructionEl.textContent = destName || (watchMode ? "說出或輸入終點" : "搜尋終點後即可規劃路線");
+      if (watchMode) {
+        navBtn.textContent = "開始";
+        if (instructionEl) instructionEl.textContent = destName || "說出或輸入終點";
+      }
+      applyUiState();
       return;
     }
     if (!lastPos) {
@@ -291,7 +352,8 @@
     }
     if (!steps.length) planRoute(true);
     navigating = true;
-    navBtn.textContent = watchMode ? "結束" : "結束導航";
+    if (watchMode) navBtn.textContent = "結束";
+    applyUiState();
     updateGuidance(lastPos);
   }
 
@@ -311,9 +373,13 @@
       if (d < best) { best = d; next = s; }
     });
     var remain = haversine(here, next.end);
-    instructionEl.textContent = remain < 30
-      ? next.instruction
-      : "約 " + Math.round(remain) + " 公尺後 " + next.instruction;
+    var text = remain < 30 ? next.instruction : "約 " + Math.round(remain) + " 公尺後 " + next.instruction;
+    if (instructionEl) instructionEl.textContent = text;
+    if (turnDistEl) turnDistEl.textContent = "約 " + Math.round(remain) + " 公尺後";
+    if (turnInstEl) turnInstEl.textContent = next.instruction;
+    if (destTitleEl) destTitleEl.textContent = destName;
+    if (etaEl) etaEl.textContent = fmtDur(lastDuration) + " · " + fmtDist(lastDistance);
+    if (etaClockEl) etaClockEl.textContent = arrivalClock(lastDuration);
     if (remain < 30 && next.instruction !== lastSpoken) {
       lastSpoken = next.instruction;
       speak(next.instruction);
