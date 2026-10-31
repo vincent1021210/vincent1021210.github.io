@@ -156,6 +156,17 @@
         rec.start();
       };
     }
+    var locate = $("locate");
+    if (locate) {
+      locate.onclick = function () {
+        if (!lastPos) {
+          toast("請允許定位，才能規劃路線。");
+          return;
+        }
+        if (map) map.setView([lastPos.lat, lastPos.lng], 17);
+        showHere();
+      };
+    }
     applyUiState();
     searchEl.addEventListener("input", function () {
       clearTimeout(searchTimer);
@@ -222,7 +233,7 @@
     hideSuggest();
     if (map) {
       if (destMarker) destMarker.remove();
-      destMarker = L.marker([dest.lat, dest.lng]).addTo(map).bindPopup(destName);
+      destMarker = L.marker([dest.lat, dest.lng], { icon: destIcon() }).addTo(map).bindPopup(destName);
       map.setView([dest.lat, dest.lng], 16);
     }
     planRoute(true);
@@ -257,18 +268,30 @@
     }, function () {}, { enableHighAccuracy: true, maximumAge: 800 });
   }
 
+  function youIcon() {
+    return L.divIcon({
+      className: "",
+      html: "<div class=\"loc-you\"><span class=\"halo\"></span><span class=\"core\"></span><span class=\"arrow\"></span></div>",
+      iconSize: [56, 56],
+      iconAnchor: [28, 28]
+    });
+  }
+
+  function destIcon() {
+    return L.divIcon({
+      className: "",
+      html: "<div class=\"loc-dest\"><svg viewBox=\"0 0 40 52\" width=\"32\" height=\"42\"><path fill=\"#1A73E8\" d=\"M20 48 L16.5 36.5 C8.5 35 5 28 5 21 A15 15 0 1 1 35 21 C35 28 31.5 35 23.5 36.5 Z\"/><circle cx=\"20\" cy=\"21\" r=\"8\" fill=\"#fff\"/><path fill=\"#1A73E8\" d=\"M20 13 L25 27 L20 24 L15 27 Z\"/></svg></div>",
+      iconSize: [32, 42],
+      iconAnchor: [16, 42]
+    });
+  }
+
   function showHere() {
     if (!map || !lastPos) return;
     if (hereMarker) {
       hereMarker.setLatLng([lastPos.lat, lastPos.lng]);
     } else {
-      hereMarker = L.circleMarker([lastPos.lat, lastPos.lng], {
-        radius: 8,
-        color: "#fff",
-        weight: 2,
-        fillColor: "#1a73e8",
-        fillOpacity: 1
-      }).addTo(map);
+      hereMarker = L.marker([lastPos.lat, lastPos.lng], { icon: youIcon(), zIndexOffset: 600 }).addTo(map);
       map.setView([lastPos.lat, lastPos.lng], 16);
     }
     if (navigating) map.panTo([lastPos.lat, lastPos.lng]);
