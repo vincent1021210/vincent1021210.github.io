@@ -44,7 +44,7 @@
 
   function labelOf(item) {
     var days = (item.days || []).slice().sort(function (a, b) { return a - b; });
-    if (!days.length) return "未指定";
+    if (!days.length) return "今天";
     if (days.join() === "1,2,3,4,5") return "週一到週五";
     if (days.join() === "0,6") return "週日週六";
     return days.map(function (d) { return dayFull[d]; }).join("、");
@@ -65,16 +65,21 @@
 
   function nextAt(item) {
     var now = Date.now();
+    if (!item.days.length) {
+      var today = new Date();
+      today.setSeconds(0, 0);
+      today.setHours(item.hour, item.minute, 0, 0);
+      return today.getTime() > now ? today.getTime() - now : null;
+    }
     for (var add = 0; add <= 7; add++) {
       var d = new Date();
       d.setSeconds(0, 0);
       d.setHours(item.hour, item.minute, 0, 0);
       d.setDate(d.getDate() + add);
       if (d.getTime() <= now) continue;
-      var dow = d.getDay();
-      if (!item.days.length || item.days.indexOf(dow) >= 0) return d.getTime() - now;
+      if (item.days.indexOf(d.getDay()) >= 0) return d.getTime() - now;
     }
-    return 24 * 60 * 60 * 1000;
+    return null;
   }
 
   function show(id) {
@@ -232,6 +237,7 @@
     items.forEach(function (item) {
       if (!item.on) return;
       var wait = nextAt(item);
+      if (wait == null) return;
       if (!next || wait < next.wait) next = { id: item.id, wait: wait };
     });
     if (!next) return;
