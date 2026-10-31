@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PATS 導航</title>
+  <meta name="description" content="雲端導航：搜尋終點、開車或走路、即時路線與語音提示。">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232563eb'/><path d='M16 6c4 0 8 3.2 8 8 0 6-8 12-8 12S8 20 8 14c0-4.8 4-8 8-8zm0 5.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z' fill='white'/></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="map" aria-label="地圖"></div>
+
+  <section class="card search-card">
+    <input id="search" type="text" placeholder="搜尋終點" autocomplete="off" inputmode="search">
+    <div class="modes" role="group" aria-label="交通方式">
+      <button type="button" id="mode-drive" class="mode on">開車</button>
+      <button type="button" id="mode-walk" class="mode">走路</button>
+    </div>
+  </section>
+
+  <section class="card panel">
+    <p id="instruction">搜尋終點後即可規劃路線</p>
+    <p id="eta"></p>
+    <button type="button" id="nav-btn">開始導航</button>
+    <a class="apk" href="PATS-導航-debug.apk" download>下載 Android APK</a>
+  </section>
+
+  <p id="toast" hidden></p>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
